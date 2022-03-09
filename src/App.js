@@ -8,7 +8,7 @@ import SignInAndSignUpPage from './pages/Sign-in-and-Sign-UpPage/Sign-in-and-Sig
 import HomePage from './pages/homepage/homepage.component';
 import ShopPage from './pages/shop/shoppage.component';
 
-import { auth } from './firebase/firebase.utils';
+import { auth, createUserProfileDocument } from './firebase/firebase.utils';
 
 
 class App extends React.Component {
@@ -21,10 +21,29 @@ class App extends React.Component {
   unsubScribeFromAuth = null
 
   componentDidMount() {
-    this.unsubScribeFromAuth = auth.onAuthStateChanged(user => {
-      this.setState({ currentUser: user })
-      console.log(user)
-    })
+    this.unsubScribeFromAuth = auth.onAuthStateChanged(async userAuth => {
+      //is userAuth is not NUll, Means when the user signs in ..
+      if (userAuth) {
+        const userRef = await createUserProfileDocument(userAuth);
+        userRef.onSnapshot(snapShot => {
+          this.setState({ /// set the currentUser to signed user
+            currentUser: {
+              id: snapShot.id,
+              ...snapShot.data()
+            },
+          },
+            () => {
+              console.log(this.state)
+
+            })
+        });
+
+      }
+      // When user Signs out , we need to update curren user state
+
+      this.setState({ currentUser: userAuth })
+
+    });
 
   }
 
@@ -37,7 +56,7 @@ class App extends React.Component {
       <div>
 
         <Router>
-          <Header currentUser = {this.state.currentUser}/>
+          <Header currentUser={this.state.currentUser} />
           <Switch>
             <Route exact path='/' component={HomePage} />
             <Route path='/shop' component={ShopPage} />
